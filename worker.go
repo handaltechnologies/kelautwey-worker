@@ -18,7 +18,7 @@ const (
 
 var url string
 
-func CheckError(err error) {
+func checkError(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +38,7 @@ func main() {
 	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
 	db, err := sql.Open("postgres", psqlconn)
-	CheckError(err)
+	checkError(err)
 
 	defer db.Close()
 
@@ -52,10 +52,7 @@ func main() {
 	urls := 0
 	for rows.Next() {
 		err := rows.Scan(&url)
-		if err != nil {
-			panic(err)
-		}
-		//fmt.Println(url)
+		checkError(err)
 		go checkStatus(url, ch)
 		urls++
 	}
@@ -65,8 +62,5 @@ func main() {
 	}
 
 	err = rows.Err()
-	if err != nil {
-		panic(err)
-	}
-
+	checkError(err)
 }
