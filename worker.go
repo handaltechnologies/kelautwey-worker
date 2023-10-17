@@ -43,9 +43,7 @@ func main() {
 	defer db.Close()
 
 	rows, err := db.Query("SELECT url FROM websites")
-	if err != nil {
-		panic(err)
-	}
+	checkError(err)
 	defer rows.Close()
 
 	ch := make(chan string)
