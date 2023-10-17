@@ -1,11 +1,28 @@
 package main
 
 import (
-	"bufio"
+	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
+
+	_ "github.com/lib/pq"
 )
+
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "password"
+	dbname   = "postgres"
+)
+
+var url string
+
+func CheckError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 
 func checkStatus(url string, ch chan<- string) {
 	response, err := http.Get(url)
@@ -18,24 +35,38 @@ func checkStatus(url string, ch chan<- string) {
 }
 
 func main() {
-	readFile, err := os.Open("data.txt")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer readFile.Close()
-	fileScanner := bufio.NewScanner(readFile)
+	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
-	fileScanner.Split(bufio.ScanLines)
+	db, err := sql.Open("postgres", psqlconn)
+	CheckError(err)
+
+	defer db.Close()
+
+	rows, err := db.Query("SELECT url FROM websites")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
 
 	ch := make(chan string)
-
 	urls := 0
-	for fileScanner.Scan() {
-		go checkStatus(fileScanner.Text(), ch)
+	for rows.Next() {
+		err := rows.Scan(&url)
+		if err != nil {
+			panic(err)
+		}
+		//fmt.Println(url)
+		go checkStatus(url, ch)
 		urls++
 	}
+
 	for i := 0; i <= urls; i++ {
 		fmt.Println(<-ch)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		panic(err)
 	}
 
 }
